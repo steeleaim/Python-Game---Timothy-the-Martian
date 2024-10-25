@@ -2,7 +2,7 @@ import random
 import pygame
 import turtle
 
-pygame.mixer.init()
+pygame.init()
 explosion_sound = pygame.mixer.Sound("explosion.wav")
 crash_sound = pygame.mixer.Sound("crash.wav")
 laser_sound = pygame.mixer.Sound("laser.wav")  
@@ -34,7 +34,7 @@ class Game():
 
     turtle.update()
     def __init__(self):
-        self.level = 1
+        self.lives = 10
         self.score = 0
         self.state = "Active"
         self.pen = turtle.Turtle()
@@ -57,7 +57,7 @@ class Game():
         self.pen.penup()
         self.pen.goto(-290, 260)
         self.pen.color("white")
-        self.pen.write(f"Score: {self.score}", font=("Courier New", 16, "bold"))
+        self.pen.write(f"Score: {self.score} Lives: {game.lives}", font=("Courier New", 16, "bold"))
 
 game = Game()
 
@@ -129,7 +129,7 @@ class Player(Ships):
     def __init__(self, shipshape, color, existing_ships):
         Ships.__init__(self, shipshape, color, existing_ships=ships_list)
         self.move_speed = 4 
-        self.lives = 5
+        self.lives = 10
 
     def turn_left(self):
         self.lt(20)
@@ -141,6 +141,14 @@ class Player(Ships):
     def reverse_thrusters(self):
         if self.move_speed < 10:
             self.move_speed -= 1
+
+
+    def respawn(self):
+        """Moves player to a new random location."""
+        x = random.randint(-250, 250)
+        y = random.randint(-250, 250)
+        self.goto(x, y)
+        self.setheading(random.randint(0, 360)) 
 
 
 class Enemy(Ships):
@@ -298,9 +306,20 @@ turtle.onkeypress(player.reverse_thrusters, "Down")
 turtle.onkey(lasers.fire, "space")
 turtle.listen()
 
+game_running = True
 
+while game_running:
+    
+    if player.lives <= 0:
+        game.pen.clear()
+        game.pen.penup()
+        game.pen.goto(-100, 0)
+        game.pen.color("red")
+        game.pen.write("Game Over", font=("Courier New", 24, "bold"))
+        game_running = False
+        break
+        
 
-while True:
     player.move()
     enemy.move()
     ally.move()
@@ -316,6 +335,7 @@ while True:
         game.show_status()
         ally.laser.goto(-1000, 1000)  # Reset laser
         ally.laser.status = "primed"
+        player.respawn()
         x = random.randint(-250, 250)
         y = random.randint(-250, 250)
         turtle.ontimer(lambda: enemy.goto(x, y), 2000)  # Respawn enemy after delay
@@ -324,14 +344,18 @@ while True:
     if enemy.laser.collision(player):
         pygame.mixer.Sound.play(explosion_sound)
         player.lives -= 1
+        game.lives = player.lives
         game.score = max(0, game.score - 20)
         game.show_status()
+        player.respawn()
         enemy.laser.goto(-1000, 1000)  # Reset the laser
         enemy.laser.status = "primed"
    
 
     if player.collision(enemy):
         pygame.mixer.Sound.play(crash_sound)
+        player.lives -= 1 
+        game.lives = player.lives
         x = random.randint(-250, 250)
         y = random.randint(-250, 250)
         turtle.ontimer(lambda: setattr(enemy, 'move_speed', random.randint(2, 10)), 2000)
@@ -344,6 +368,7 @@ while True:
         x = random.randint(-250, 250)
         y = random.randint(-250, 250)
         game.score = max(0, game.score - 10)
+        game.lives = player.lives
         game.show_status()
         ally.goto(x, y)
 
@@ -385,6 +410,5 @@ while True:
         turtle.ontimer(lambda: meteor.goto(x,y), 10000)
         turtle.ontimer(lambda: meteor.st(), 10000)    
         
-        
-        lasers.goto(-1000, 1000)  
-        lasers.status = "primed"
+   
+turtle.done()
