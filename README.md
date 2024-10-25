@@ -3,6 +3,6 @@ A spaceship game created in python based on SpaceWar tutorial by TokyoEdtech.
 
 
 IMPORTS - 
-Turlte 
+Turtle 
 PyGame
 Random
